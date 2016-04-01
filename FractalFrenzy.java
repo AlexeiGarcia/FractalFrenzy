@@ -1,10 +1,20 @@
-import java.util.Random;
-import java.util.Arrays;
-import java.util.Scanner;
-import java.awt.*;
-import java.awt.image.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.KeyStroke;
+
+//This import statement, although not necessary to compile, allows the user to move with W,A,S,D,
 import java.awt.event.*;
-import javax.swing.*;
 
 /*This Class is the main class that generates the Frame and fractal when it is called by the user.
  * The application itself is a Fractal Explorer, where the user is prompted to enter two double numbers
@@ -12,7 +22,7 @@ import javax.swing.*;
  * application and save images or screenshots of the fractal.
  */
 
-public class FractalFrenzy extends JFrame{
+public class FractalFrenzy extends FractalMain{
   
   //Sets Frame Dimensions
   public static final int FRAME_WIDTH = 800;
@@ -34,19 +44,19 @@ public class FractalFrenzy extends JFrame{
   
   Body body;
   BufferedImage fractal;
+  double value1;
+  double value2;
   
   /*Constructor adds the properties of the viewing frame, adds the frame from the frame subclass, 
    * listens for frame adjustments based on user input, and updates the image
    */
-  public FractalFrenzy() {
+  public FractalFrenzy(double a, double b) {
+    value1 = a;
+    value2 = b;
     addBody();
     setFrameProperties();
     body.addKeyStrokeMov();
-    update();
-  }
-  
-  public static void main(String[] args) {
-    new FractalFrenzy();
+    update(value1, value2);
   }
   
   //Creates the frame, sets boundaries and image type of fractal image, and adds the frame to the center of the screen 
@@ -76,45 +86,45 @@ public class FractalFrenzy extends JFrame{
     zoomIncrement = tempZoomIncrement;
     topLeftX -= (FRAME_WIDTH/2) / zoomIncrement;
     topLeftY += (FRAME_HEIGHT/2) / zoomIncrement;
-    update();
+    update(value1, value2);
   }
   
   //Moves frame up by approximately 1/5 of current height
   private void moveUp() {
     double currentHeight = FRAME_HEIGHT / zoomIncrement;
     topLeftY += currentHeight / 5;
-    update();
+    update(value1, value2);
   }
   
   //Moves frame down by approximately 1/5 of current height
   private void moveDown() {
     double currentHeight = FRAME_HEIGHT / zoomIncrement;
     topLeftY -= currentHeight / 5;
-    update();
+    update(value1, value2);
   }
   //Moves frame left by approximately 1/5 of current width
   private void moveLeft() {
     double currentWidth = FRAME_WIDTH / zoomIncrement;
     topLeftX -= currentWidth / 5;
-    update();
+    update(value1, value2);
   }
   //Moves frame right by approximately 1/5 of current width
   private void moveRight() {
     double currentWidth = FRAME_WIDTH / zoomIncrement;
-    topLeftY += currentWidth / 5;
-    update();
+    topLeftX += currentWidth / 5;
+    update(value1, value2);
   }
   
   /*Updates frame and image
    *Creates fractal image by changing the color of each pixel based on the number of iterations
    *for that point.
    */
-  public void update() {
+  public void update(double value1, double value2) {
     for(int x = 0; x < FRAME_WIDTH; x++) {
       for(int y = 0; y < FRAME_HEIGHT; y++) {
         double a = getXPos(x);
         double b = getYPos(y);
-        int count = computeValues(a, b);
+        int count = computeValues(a, b, value1, value2);
         int pointColor = generateColor(count);
         fractal.setRGB(x, y, pointColor);
       }
@@ -127,15 +137,16 @@ public class FractalFrenzy extends JFrame{
     return x/zoomIncrement + topLeftX;
   }
   
-  //Get Y postition
+  //Get Y position
   private double getYPos(double y) {
     return y/zoomIncrement - topLeftY;
   }
   
-  //Calculations for generating fractal (checks 150 iterations of users points of C_real and C_imaginary)
-  private int computeValues(double a, double b) {
-    double z1 = 0.0;
-    double z2 = 0.0;
+  //Calculations for generating fractal (checks 200 iterations of users points of C_real (a) and C_imaginary (b) )
+  private int computeValues(double a, double b, double value1, double value2) {
+ double z1 = value1 ;
+    double z2 = value2;
+
     int count = 0;
     while(z1*z1 + z2*z2 <= 4.0) {
       double ztemp = z1;
@@ -151,8 +162,8 @@ public class FractalFrenzy extends JFrame{
   
   //Generates colors that correspond to areas of Fractal and iteration count
   private int generateColor(int count) {
-    int color = 0b111111010100101000100010; 
-    int cover = 0b000000101000010101010100; 
+    int color = 0b001010010100100101111111; 
+    int cover = 0b000101000100010001010100; 
     int shift = count / 13;
     
     if (count == ITERATIONS) 
@@ -161,7 +172,7 @@ public class FractalFrenzy extends JFrame{
     return color | (cover << shift);
   }
   
-  //Frame object that inherits from JPanel but is used as a seperate class/object  by FractalExplorer
+  //Frame object that inherits from JPanel but is used as a separate class/object  by FractalExplorer
   public class Body extends JPanel implements MouseListener {
     
     //Constructor adds MouseListener for user input for exploration
@@ -169,6 +180,7 @@ public class FractalFrenzy extends JFrame{
       addMouseListener(this);
     }
     
+    //overrides Dimension to create width and height
     @Override public Dimension getSize() {
       return new Dimension(FRAME_WIDTH, FRAME_HEIGHT);
     }
@@ -177,6 +189,8 @@ public class FractalFrenzy extends JFrame{
       drawingObj.drawImage(fractal, 0, 0, null);
     }
     
+    
+    //Basic switch statement dictated by left and right clicks of mouse
     @Override public void mousePressed(MouseEvent mouse) {
       double x = (double) mouse.getX();
       double y = (double) mouse.getY();
@@ -194,11 +208,13 @@ public class FractalFrenzy extends JFrame{
       }
     }
     
+    //Override of all other mouse functions
     @Override public void mouseReleased(MouseEvent mouse){}
     @Override public void mouseClicked(MouseEvent mouse) {}
     @Override public void mouseEntered(MouseEvent mouse) {}
     @Override public void mouseExited (MouseEvent mouse) {}
     
+    //Method allows for the W,A,S,D keys to be used to linearly move through program, uses "move" methods from above
     public void addKeyStrokeMov() {
       KeyStroke wKey = KeyStroke.getKeyStroke(KeyEvent.VK_W, 0);
       KeyStroke aKey = KeyStroke.getKeyStroke(KeyEvent.VK_A, 0);
